@@ -17,6 +17,7 @@
 import _setup  # noqa: F401
 import statistics
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -31,7 +32,7 @@ import httpx
 # %%
 ROOT = Path(_setup.__file__).resolve().parent.parent
 proc = subprocess.Popen(
-    ["uvicorn", "app.main:app", "--port", "8000", "--log-level", "warning"],
+    [sys.executable, "-m", "uvicorn", "app.main:app", "--port", "8000", "--log-level", "warning"],
     cwd=str(ROOT),
 )
 
@@ -128,7 +129,12 @@ else:
 
 # %%
 proc.terminate()
-proc.wait(timeout=5)
+try:
+    proc.wait(timeout=5)
+except subprocess.TimeoutExpired:
+    # Uvicorn can keep a worker alive briefly on some notebook kernels.
+    proc.kill()
+    proc.wait()
 print("API server stopped")
 
 # %% [markdown]
